@@ -5,6 +5,7 @@ import com.rabbitmq.client.AMQP;
 import java.io.IOException;
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Arguments;
@@ -27,21 +28,21 @@ import com.rabbitmq.client.Channel;
  *
  * However, access to class fields must be synchronized.
  */
-public class AMQPPublisher extends AMQPSampler implements Interruptible {
+public class AmqpConnProducer extends AMQPSampler implements Interruptible {
 
     private static final long serialVersionUID = -8420658040465788497L;
 
     private static final Logger log = LoggingManager.getLoggerForClass();
 
     //++ These are JMX names, and must not be changed
-    private final static String MESSAGE = "AMQPPublisher.Message";
-    private final static String MESSAGE_ROUTING_KEY = "AMQPPublisher.MessageRoutingKey";
-    private final static String MESSAGE_TYPE = "AMQPPublisher.MessageType";
-    private final static String REPLY_TO_QUEUE = "AMQPPublisher.ReplyToQueue";
-    private final static String CONTENT_TYPE = "AMQPPublisher.ContentType";
-    private final static String CORRELATION_ID = "AMQPPublisher.CorrelationId";
-    private final static String MESSAGE_ID = "AMQPPublisher.MessageId";
-    private final static String HEADERS = "AMQPPublisher.Headers";
+    private final static String MESSAGE = AmqpConnProducer.class.getSimpleName() + ".Message";
+    private final static String MESSAGE_ROUTING_KEY = AmqpConnProducer.class.getSimpleName() + ".MessageRoutingKey";
+    private final static String MESSAGE_TYPE = AmqpConnProducer.class.getSimpleName() + ".MessageType";
+    private final static String REPLY_TO_QUEUE = AmqpConnProducer.class.getSimpleName() + ".ReplyToQueue";
+    private final static String CONTENT_TYPE = AmqpConnProducer.class.getSimpleName() + ".ContentType";
+    private final static String CORRELATION_ID = AmqpConnProducer.class.getSimpleName() + ".CorrelationId";
+    private final static String MESSAGE_ID = AmqpConnProducer.class.getSimpleName() + ".MessageId";
+    private final static String HEADERS = AmqpConnProducer.class.getSimpleName() + ".Headers";
 
     public static boolean DEFAULT_PERSISTENT = false;
     private final static String PERSISTENT = "AMQPConsumer.Persistent";
@@ -51,27 +52,26 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
 
     private transient Channel channel;
 
-    public AMQPPublisher() {
+    public AmqpConnProducer() {
         super();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public SampleResult sample(Entry e) {
         SampleResult result = new SampleResult();
         result.setSampleLabel(getName());
         result.setSuccessful(false);
         result.setResponseCode("500");
 
-        try {
-            initChannel();
-        } catch (Exception ex) {
-            log.error("Failed to initialize channel : ", ex);
-            result.setResponseMessage(ex.toString());
-            return result;
-        }
+//        try {
+//            initChannel();
+//        } catch (Exception ex) {
+//            log.error("Failed to initialize channel : ", ex);
+//            result.setResponseMessage(ex.toString());
+//            return result;
+//        }
 
         String data = getMessage(); // Sampler data
 
@@ -91,15 +91,24 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
                 // try to force jms semantics.
                 // but this does not work since RabbitMQ does not sync to disk if consumers are connected as
                 // seen by iostat -cd 1. TPS value remains at 0.
+                try {
+                    initChannel();
+                    channel.basicPublish(getExchange(), getMessageRoutingKey(), messageProperties, messageBytes);
+                    // commit the sample.
+                    if (getUseTx()) {
+                        channel.txCommit();
+                    }
 
-                channel.basicPublish(getExchange(), getMessageRoutingKey(), messageProperties, messageBytes);
-
+                }catch (Exception ex){
+                    log.error("Failed to initialize channel : ", ex);
+                    result.setResponseMessage(ex.toString());
+                    return result;
+                }finally {
+                    super.cleanup();//close connection
+                }
             }
 
-            // commit the sample.
-            if (getUseTx()) {
-                channel.txCommit();
-            }
+
 
             /*
              * Set up the sample result details
@@ -173,13 +182,13 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     }
 
     public String getContentType() {
-    	return getPropertyAsString(CONTENT_TYPE);
+        return getPropertyAsString(CONTENT_TYPE);
     }
-    
+
     public void setContentType(String contentType) {
-    	setProperty(CONTENT_TYPE, contentType);
+        setProperty(CONTENT_TYPE, contentType);
     }
-    
+
     /**
      * @return the correlation identifier for the sample
      */
@@ -215,7 +224,7 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     }
 
     public void setPersistent(Boolean persistent) {
-       setProperty(PERSISTENT, persistent);
+        setProperty(PERSISTENT, persistent);
     }
 
     public Boolean getUseTx() {
@@ -223,10 +232,9 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     }
 
     public void setUseTx(Boolean tx) {
-       setProperty(USE_TX, tx);
+        setProperty(USE_TX, tx);
     }
 
-    @Override
     public boolean interrupt() {
         cleanup();
         return true;
@@ -247,22 +255,22 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
 
         final int deliveryMode = getPersistent() ? 2 : 1;
         final String contentType = StringUtils.defaultIfEmpty(getContentType(), "text/plain");
-        
+
         builder.contentType(contentType)
-            .deliveryMode(deliveryMode)
-            .priority(0)
-            .correlationId(getCorrelationId())
-            .replyTo(getReplyToQueue())
-            .type(getMessageType())
-            .headers(prepareHeaders())
-            .build();
+                .deliveryMode(deliveryMode)
+                .priority(0)
+                .correlationId(getCorrelationId())
+                .replyTo(getReplyToQueue())
+                .type(getMessageType())
+                .headers(prepareHeaders())
+                .build();
         if (getMessageId() != null && getMessageId().isEmpty()) {
             builder.messageId(getMessageId());
         }
         return builder.build();
     }
 
-    protected boolean initChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException {
+    protected boolean initChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException, TimeoutException {
         boolean ret = super.initChannel();
         if (getUseTx()) {
             channel.txSelect();
