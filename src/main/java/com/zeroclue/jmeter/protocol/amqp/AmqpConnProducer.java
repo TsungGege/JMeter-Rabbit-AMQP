@@ -44,6 +44,9 @@ public class AmqpConnProducer extends AMQPSampler implements Interruptible {
     private final static String MESSAGE_ID = AmqpConnProducer.class.getSimpleName() + ".MessageId";
     private final static String HEADERS = AmqpConnProducer.class.getSimpleName() + ".Headers";
 
+    private final static String SLEEP_ITERS = AmqpConnProducer.class.getSimpleName() + ".SleepIters";
+    private final static String SLEEP_TIME = AmqpConnProducer.class.getSimpleName() + ".SleepTime";
+
     public static boolean DEFAULT_PERSISTENT = false;
     private final static String PERSISTENT = "AMQPConsumer.Persistent";
 
@@ -101,10 +104,14 @@ public class AmqpConnProducer extends AMQPSampler implements Interruptible {
 
                 }catch (Exception ex){
                     log.error("Failed to initialize channel : ", ex);
+                    result.setResponseCode("600");
                     result.setResponseMessage(ex.toString());
                     return result;
                 }finally {
                     super.cleanup();//close connection
+                }
+                if(idx>0 && idx % getSleepIters() == 0 ){
+                    Thread.sleep(getSleepTime());
                 }
             }
 
@@ -233,6 +240,22 @@ public class AmqpConnProducer extends AMQPSampler implements Interruptible {
 
     public void setUseTx(Boolean tx) {
         setProperty(USE_TX, tx);
+    }
+
+    public Integer getSleepIters(){
+        return getPropertyAsInt(SLEEP_ITERS,10);
+    }
+
+    public void setSleepIters(Integer sleepIters){
+        setProperty(SLEEP_ITERS,sleepIters);
+    }
+
+    public void setSleepTime(Integer sleepTime){
+        setProperty(SLEEP_TIME,sleepTime);
+    }
+
+    public Integer getSleepTime(){
+        return getPropertyAsInt(SLEEP_TIME,1000);
     }
 
     public boolean interrupt() {

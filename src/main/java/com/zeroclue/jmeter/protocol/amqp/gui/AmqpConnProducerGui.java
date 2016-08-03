@@ -2,6 +2,7 @@ package com.zeroclue.jmeter.protocol.amqp.gui;
 
 import com.zeroclue.jmeter.protocol.amqp.AMQPPublisher;
 import com.zeroclue.jmeter.protocol.amqp.AmqpConnProducer;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.testelement.TestElement;
@@ -45,6 +46,10 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
 
     private ArgumentsPanel headers = new ArgumentsPanel("Headers");
 
+    private JLabeledTextField sleepIters = new JLabeledTextField("Sleep Iterations");
+    private JLabeledTextField sleepTime = new JLabeledTextField("Sleep Time:");
+
+
     public AmqpConnProducerGui(){
         init();
     }
@@ -80,6 +85,8 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
         correlationId.setText(sampler.getCorrelationId());
         messageId.setText(sampler.getMessageId());
         message.setText(sampler.getMessage());
+        sleepIters.setText(String.valueOf(sampler.getSleepIters()));
+        sleepTime.setText(String.valueOf(sampler.getSleepTime()));
         configureHeaders(sampler);
     }
 
@@ -114,6 +121,16 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
         sampler.setContentType(contentType.getText());
         sampler.setMessageId(messageId.getText());
         sampler.setHeaders((Arguments) headers.createTestElement());
+        Integer sleepItersVal = 10;
+        if(NumberUtils.isNumber(sleepIters.getText())){
+            sleepItersVal = Integer.parseInt(sleepIters.getText());
+        }
+        sampler.setSleepIters(sleepItersVal);
+        Integer sleepTimeVal = 10;
+        if(NumberUtils.isNumber(sleepTime.getText())){
+            sleepTimeVal = Integer.parseInt(sleepTime.getText());
+        }
+        sampler.setSleepTime(sleepTimeVal);
     }
 
     @Override
@@ -129,6 +146,8 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
         super.init();
         persistent.setPreferredSize(new Dimension(100, 25));
         useTx.setPreferredSize(new Dimension(100, 25));
+        sleepIters.setPreferredSize(new Dimension(100,25));
+        sleepTime.setPreferredSize(new Dimension(100,25));
         messageRoutingKey.setPreferredSize(new Dimension(100, 25));
         messageType.setPreferredSize(new Dimension(100, 25));
         replyToQueue.setPreferredSize(new Dimension(100, 25));
@@ -139,6 +158,8 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
 
         mainPanel.add(persistent);
         mainPanel.add(useTx);
+        mainPanel.add(sleepIters);
+        mainPanel.add(sleepTime);
         mainPanel.add(messageRoutingKey);
         mainPanel.add(messageType);
         mainPanel.add(replyToQueue);
@@ -165,6 +186,8 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
         messageId.setText("");
         headers.clearGui();
         message.setText("");
+        sleepIters.setText("10");
+        sleepTime.setText("1000");
     }
 
     private void configureHeaders(AmqpConnProducer sampler)
