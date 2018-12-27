@@ -149,7 +149,8 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
     protected void init() {
         setLayout(new BorderLayout(0, 5));
         setBorder(makeBorder());
-        add(makeTitlePanel(), BorderLayout.NORTH); // Add the standard title
+        // Add the standard title
+        add(makeTitlePanel(), BorderLayout.NORTH);
 
         JPanel mainPanel = new VerticalPanel();
 

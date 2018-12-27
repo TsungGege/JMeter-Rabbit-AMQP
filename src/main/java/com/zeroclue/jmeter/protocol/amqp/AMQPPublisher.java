@@ -1,5 +1,6 @@
 package com.zeroclue.jmeter.protocol.amqp;
 
+import com.alibaba.fastjson.JSONObject;
 import com.rabbitmq.client.AMQP;
 
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.security.*;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.samplers.Entry;
@@ -28,6 +30,7 @@ import com.rabbitmq.client.Channel;
  *
  * However, access to class fields must be synchronized.
  */
+@Data
 public class AMQPPublisher extends AMQPSampler implements Interruptible {
 
     private static final long serialVersionUID = -8420658040465788497L;
@@ -43,7 +46,16 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     private final static String CORRELATION_ID = "AMQPPublisher.CorrelationId";
     private final static String MESSAGE_ID = "AMQPPublisher.MessageId";
     private final static String HEADERS = "AMQPPublisher.Headers";
+    /**
+     * modbus 消息类型（"read", "write", "data", "online","offline"）
+     * */
+    private final static String MESSAGE_MODBUS_TYPE = "AMQPPublisher.messageModbusType";
+    /**
+     * modbus 设备ID
+     * */
+    private final static String DEVICE_ID = "AMQPPublisher.deviceId";
 
+    private final static String DATA_ID = "AMQPPublisher.dataId";
     public static boolean DEFAULT_PERSISTENT = false;
     private final static String PERSISTENT = "AMQPConsumer.Persistent";
 
@@ -124,7 +136,30 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     }
 
 
+    /**
+     * 测试参数Json转实体类，实体类转推送byte[]
+     * todo 待补充
+     * */
     private byte[] getMessageBytes() {
+
+        // 根据信息类型组装message
+        String messageModbusType = getMessageModbusType();
+//        switch(messageModbusType) {
+//
+//        }
+
+
+
+        String message = getMessage();
+        JSONObject jsonObject = JSONObject.parseObject(message);
+
+
+
+
+
+
+
+
         return getMessage().getBytes();
     }
 
@@ -145,6 +180,7 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     public String getMessage() {
         return getPropertyAsString(MESSAGE);
     }
+
 
     public void setMessage(String content) {
         setProperty(MESSAGE, content);
@@ -178,6 +214,38 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
     
     public void setContentType(String contentType) {
     	setProperty(CONTENT_TYPE, contentType);
+    }
+
+    /**
+     * modbus message 类型： "read", "write", "data", "online","offline"
+     * */
+    public String getMessageModbusType() {
+        return getPropertyAsString(MESSAGE_MODBUS_TYPE);
+    }
+
+    public void setMessageModbusType(String messageModbusType) {
+        setProperty(MESSAGE_MODBUS_TYPE, messageModbusType);
+    }
+
+    /**
+     * 设备ID
+     * */
+    public String getDeviceId() {
+        return getPropertyAsString(DEVICE_ID);
+    }
+
+    public void setDeviceId(String deviceId) {
+        setProperty(DEVICE_ID,deviceId);
+    }
+
+    /**
+     * 数据点Id
+     * */
+    public String getDataId() {
+        return getPropertyAsString(DATA_ID);
+    }
+    public void setDataId(String dataId) {
+        setProperty(DATA_ID,dataId);
     }
     
     /**

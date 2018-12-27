@@ -6,6 +6,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jorphan.gui.JLabeledChoice;
 import org.apache.jorphan.gui.JLabeledTextArea;
 import org.apache.jorphan.gui.JLabeledTextField;
 
@@ -40,6 +41,7 @@ public class AmqpConnProducerGui extends AMQPSamplerGui {
     private JLabeledTextField correlationId = new JLabeledTextField("Correlation Id");
     private JLabeledTextField contentType = new JLabeledTextField("ContentType");
     private JLabeledTextField messageId = new JLabeledTextField("Message Id");
+
 
     private JCheckBox persistent = new JCheckBox("Persistent?", AMQPPublisher.DEFAULT_PERSISTENT);
     private JCheckBox useTx = new JCheckBox("Use Transactions?", AMQPPublisher.DEFAULT_USE_TX);

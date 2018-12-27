@@ -4,9 +4,11 @@ import java.awt.Dimension;
 
 import javax.swing.*;
 
+import lombok.Data;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.testelement.TestElement;
+import org.apache.jorphan.gui.JLabeledChoice;
 import org.apache.jorphan.gui.JLabeledTextArea;
 import org.apache.jorphan.gui.JLabeledTextField;
 
@@ -22,6 +24,7 @@ import com.zeroclue.jmeter.protocol.amqp.AMQPPublisher;
  * additional setup that a test would need at run-time
  *
  */
+@Data
 public class AMQPPublisherGui extends AMQPSamplerGui {
 
     private static final long serialVersionUID = 1L;
@@ -40,6 +43,22 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
     private JLabeledTextField correlationId = new JLabeledTextField("Correlation Id");
     private JLabeledTextField contentType = new JLabeledTextField("ContentType");
     private JLabeledTextField messageId = new JLabeledTextField("Message Id");
+
+    /**
+     * modbus 推送信息类型选择
+     */
+    private JLabeledChoice messageModbusType = new JLabeledChoice("Modbus Message Type",
+            new String[]{ "read", "write", "data", "online","offline"});
+    /**
+     * modbus设备id
+     * */
+    private JLabeledTextField deviceId = new JLabeledTextField("Device Id");
+
+    /**
+     * modbus设备数据点ID，（当消息类型为 read write时才需要）
+     * */
+    private JLabeledTextField dataId = new JLabeledTextField("DataP Point Id");
+
 
     private JCheckBox persistent = new JCheckBox("Persistent?", AMQPPublisher.DEFAULT_PERSISTENT);
     private JCheckBox useTx = new JCheckBox("Use Transactions?", AMQPPublisher.DEFAULT_USE_TX);
@@ -81,6 +100,9 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
         correlationId.setText(sampler.getCorrelationId());
         messageId.setText(sampler.getMessageId());
         message.setText(sampler.getMessage());
+        messageModbusType.setText(sampler.getMessageModbusType());
+        deviceId.setText(sampler.getDeviceId());
+        dataId.setText(sampler.getDataId());
         configureHeaders(sampler);
     }
 
@@ -115,15 +137,20 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
         sampler.setContentType(contentType.getText());
         sampler.setMessageId(messageId.getText());
         sampler.setHeaders((Arguments) headers.createTestElement());
+        sampler.setDeviceId(deviceId.getText());
+        sampler.setMessageModbusType(messageModbusType.getText());
+        sampler.setDataId(dataId.getText());
     }
+
 
     @Override
     protected void setMainPanel(JPanel panel){
         mainPanel = panel;
     }
 
-    /*
+    /**
      * Helper method to set up the GUI screen
+     * 页面元素初始化
      */
     @Override
     protected final void init() {
@@ -137,6 +164,9 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
         contentType.setPreferredSize(new Dimension(100, 25));
         messageId.setPreferredSize(new Dimension(100, 25));
         message.setPreferredSize(new Dimension(400, 150));
+        messageModbusType.setPreferredSize(new Dimension(100,25));
+        deviceId.setPreferredSize(new Dimension(100,25));
+        dataId.setPreferredSize(new Dimension(100,25));
 
         mainPanel.add(persistent);
         mainPanel.add(useTx);
@@ -148,6 +178,9 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
         mainPanel.add(messageId);
         mainPanel.add(headers);
         mainPanel.add(message);
+        mainPanel.add(deviceId);
+        mainPanel.add(messageModbusType);
+        mainPanel.add(dataId);
     }
 
     /**
@@ -166,6 +199,9 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
         messageId.setText("");
         headers.clearGui();
         message.setText("");
+        messageModbusType.setText("");
+        deviceId.setText("");
+        dataId.setText("");
     }
 
     private void configureHeaders(AMQPPublisher sampler)
